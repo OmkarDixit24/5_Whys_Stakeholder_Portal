@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5 Whys Stakeholder Intake Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --border-color: #000000;
+            --shadow-color: #000000;
+            --accent-bg: #f3f4f6;
+            --tooltip-bg: #fffbdd;
+            
+            --border-thick: 3px solid var(--border-color);
+            --border-thin: 2px solid var(--border-color);
+            --shadow-hard: 5px 5px 0px var(--shadow-color);
+            --shadow-hard-active: 2px 2px 0px var(--shadow-color);
+        }
+
+        body {
+            font-family: 'Comic Neue', cursive;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .wf-box {
+            background-color: var(--bg-color);
+            border: var(--border-thick);
+            border-radius: 8px;
+            box-shadow: var(--shadow-hard);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .wf-input, .wf-textarea, .wf-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: var(--border-thin);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1.1rem;
+            outline: none;
+            background-color: var(--accent-bg);
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+        
+        .wf-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .wf-input:focus, .wf-textarea:focus, .wf-select:focus {
+            background-color: var(--bg-color);
+            box-shadow: 3px 3px 0px var(--shadow-color);
+        }
+
+        .wf-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: var(--border-thick);
+            border-radius: 8px;
+            box-shadow: var(--shadow-hard);
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.1s ease;
+            user-select: none;
+        }
+
+        .wf-btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: var(--shadow-hard-active);
+        }
+
+        .wf-btn-dark {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        .wf-btn-outline {
+            background-color: transparent;
+            border: 2px dashed var(--border-color);
+            box-shadow: none;
+        }
+        .wf-btn-outline:active {
+            transform: scale(0.98);
+        }
+
+        .hidden-step { display: none !important; }
+
+        /* Custom Slider Range */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--text-color);
+            cursor: pointer;
+            margin-top: -8px;
+            border: 2px solid var(--bg-color);
+            box-shadow: 0 0 0 2px var(--text-color);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: var(--border-color);
+            border-radius: 4px;
+            border: 1px solid var(--text-color);
+        }
+
+        /* Recruiter Mode Tooltips */
+        .recruiter-tooltip {
+            position: absolute;
+            background: var(--tooltip-bg);
+            color: #000;
+            border: 2px dashed #000;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.2);
+            z-index: 10;
+            transform: rotate(-2deg);
+            max-width: 250px;
+            pointer-events: none;
+            display: none;
+        }
+        
+        .show-tooltips .recruiter-tooltip {
+            display: block;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8) rotate(-5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(-2deg); }
+        }
+
+        /* Toast */
+        #toast-container {
+            position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
+            z-index: 50; display: flex; flex-direction: column; gap: 0.5rem;
+        }
+        .toast {
+            background: var(--text-color); color: var(--bg-color);
+            border: var(--border-thin); box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+            padding: 1rem; border-radius: 6px; font-weight: bold;
+        }
+    </style>
+</head>
+<body id="app-body" class="bg-gray-50 min-h-screen flex flex-col">
+
+    <header class="p-4 flex justify-between items-center border-b-4 border-black bg-white sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl">🕵️‍♂️</span>
+            <h1 class="text-2xl font-bold tracking-tight">IntakePortal.</h1>
+        </div>
+        
+        <div>
+            <!-- Recruiter Mode Toggle -->
+            <button onclick="toggleRecruiterMode()" class="px-3 py-2 rounded border-2 border-[var(--border-color)] bg-[var(--accent-bg)] hover:bg-gray-200 transition-colors text-sm font-bold shadow-[2px_2px_0px_#000]">
+                🎓 <span id="recruiter-toggle-text">Recruiter Mode: OFF</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl relative">
+            
+            <div id="step-1" class="step-container wf-box animate-[popIn_0.3s_ease-out]">
+                <div class="recruiter-tooltip" style="top: -30px; right: -20px;">
+                    Branching prevents the "One Size Fits All" form fatigue. Differentiates bug fixes from feature requests instantly.
+                </div>
+                <h2 class="text-3xl font-bold mb-2">What brings you here today?</h2>
+                <p class="text-gray-600 mb-8 font-bold">Help us categorize your request so we can allocate the right resources.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="selectType('Pain Point')" class="wf-btn py-10 flex flex-col gap-2 hover:bg-gray-100">
+                        <span class="text-4xl">🩹</span>
+                        <span>Fix a Pain Point</span>
+                        <span class="text-xs font-normal opacity-70">Something is broken, slow, or frustrating.</span>
+                    </button>
+                    <button onclick="selectType('Opportunity')" class="wf-btn py-10 flex flex-col gap-2 hover:bg-gray-100">
+                        <span class="text-4xl">🚀</span>
+                        <span>New Opportunity</span>
+                        <span class="text-xs font-normal opacity-70">A new feature, market expansion, or idea.</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="step-2" class="step-container hidden-step wf-box">
+                <button onclick="goToStep(1)" class="text-sm font-bold hover:underline mb-4">← Back</button>
+                <h2 class="text-2xl font-bold mb-4">The Initial Request</h2>
+                
+                <div class="mb-6 relative">
+                    <label class="block font-bold mb-2">In one sentence, what exactly are you asking for?</label>
+                    <textarea id="input-premise" class="wf-textarea font-bold text-lg" placeholder="e.g., 'I want a button that exports the user list to PDF'"></textarea>
+                    
+                    <div class="recruiter-tooltip" style="bottom: -20px; right: 10px;">
+                        The "XY Problem": Stakeholders often ask for a specific solution (X) when they actually have a deeper problem (Y). This is the starting point.
+                    </div>
+                </div>
+                
+                <button onclick="startWhys()" class="wf-btn wf-btn-dark w-full py-4 text-xl">
+                    Begin Root Cause Analysis →
+                </button>
+            </div>
+
+            <div id="step-3" class="step-container hidden-step wf-box">
+                <div class="flex justify-between items-center mb-6 border-b-2 border-black pb-4 relative">
+                    <h2 class="text-2xl font-bold">The "5 Whys" Protocol</h2>
+                    <div class="px-3 py-1 bg-black text-white rounded font-bold border-2 border-black">
+                        Iteration: <span id="why-counter">1</span> / 5
+                    </div>
+                    <div class="recruiter-tooltip" style="top: 0px; right: -40px;">
+                        Automated requirements elicitation. Forces the stakeholder to break down their own assumptions.
+                    </div>
+                </div>
+                
+                <div class="bg-gray-100 p-4 rounded-lg border-2 border-dashed border-gray-400 mb-6">
+                    <span class="text-sm font-bold text-gray-500 uppercase">You previously stated:</span>
+                    <p id="why-premise-display" class="font-bold text-lg mt-1 italic">"..."</p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block font-bold text-xl mb-2 flex items-center gap-2">
+                        <span class="text-2xl">🤔</span> Why is this necessary?
+                    </label>
+                    <textarea id="input-why" class="wf-textarea font-bold" placeholder="Because..."></textarea>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button onclick="submitWhy()" id="btn-next-why" class="wf-btn wf-btn-dark flex-1">
+                        Next Question →
+                    </button>
+                    <button onclick="finishWhys()" class="wf-btn wf-btn-outline flex-1">
+                        🏁 Root Cause Found
+                    </button>
+                </div>
+            </div>
+
+            <div id="step-4" class="step-container hidden-step wf-box">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-black pb-2">Context & Acceptance Criteria</h2>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block font-bold mb-2">Who is the primary user for this? (Persona)</label>
+                        <input type="text" id="input-persona" class="wf-input" placeholder="e.g., Sales Manager, End-User, Admin">
+                    </div>
+
+                    <div class="relative pt-4 border-t-2 border-dashed border-gray-300">
+                        <label class="block font-bold text-xl mb-4">BDD Acceptance Criteria Builder</label>
+                        <div class="recruiter-tooltip" style="top: 10px; right: -20px;">
+                            Bridging Business and QA. Forces stakeholders to define EXACTLY how this feature behaves in a testable format (Behavior-Driven Development).
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-3">
+                                <span class="bg-black text-white px-3 py-1 font-bold rounded">GIVEN</span>
+                                <input type="text" id="input-given" class="wf-input" placeholder="[initial context, e.g., the user is logged in]">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="bg-black text-white px-3 py-1 font-bold rounded">WHEN</span>
+                                <input type="text" id="input-when" class="wf-input" placeholder="[action taken, e.g., they click the export button]">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="bg-black text-white px-3 py-1 font-bold rounded">THEN</span>
+                                <input type="text" id="input-then" class="wf-input" placeholder="[expected result, e.g., a PDF is generated]">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="goToStep(5)" class="wf-btn wf-btn-dark w-full py-4 text-xl mt-8">
+                    Next: Prioritization →
+                </button>
+            </div>
+
+            <div id="step-5" class="step-container hidden-step wf-box">
+                <h2 class="text-2xl font-bold mb-6 border-b-2 border-black pb-2">RICE Scoring Framework</h2>
+                
+                <div class="space-y-8 relative">
+                    <div class="recruiter-tooltip" style="top: -40px; right: -10px;">
+                        Quantifies the business value. Prevents "HIPPO" (Highest Paid Person's Opinion) and emotional prioritization by forcing mathematical constraints.
+                    </div>
+
+                    <div>
+                        <label class="block font-bold mb-2 flex justify-between">
+                            <span>Reach (How many users per month?)</span>
+                            <span id="val-reach" class="font-mono bg-gray-200 px-2 rounded">500</span>
+                        </label>
+                        <input type="range" id="input-reach" min="1" max="1000" value="500" oninput="updateRiceDisplay()">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold mb-2 flex justify-between">
+                            <span>Impact (1 = Low, 3 = Massive)</span>
+                            <span id="val-impact" class="font-mono bg-gray-200 px-2 rounded">2</span>
+                        </label>
+                        <input type="range" id="input-impact" min="1" max="3" step="0.5" value="2" oninput="updateRiceDisplay()">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold mb-2 flex justify-between">
+                            <span>Confidence (How sure are you? %)</span>
+                            <span id="val-confidence" class="font-mono bg-gray-200 px-2 rounded">80%</span>
+                        </label>
+                        <input type="range" id="input-confidence" min="10" max="100" step="10" value="80" oninput="updateRiceDisplay()">
+                    </div>
+
+                    <div>
+                        <label class="block font-bold mb-2 flex justify-between">
+                            <span>Effort (Estimated Engineering Months)</span>
+                            <span id="val-effort" class="font-mono bg-gray-200 px-2 rounded">2</span>
+                        </label>
+                        <input type="range" id="input-effort" min="1" max="10" step="1" value="2" oninput="updateRiceDisplay()">
+                    </div>
+
+                    <div class="p-4 bg-black text-white rounded-lg text-center shadow-[4px_4px_0px_#ccc]">
+                        <div class="text-sm font-bold uppercase text-gray-400">Calculated RICE Score</div>
+                        <div id="display-rice-score" class="text-5xl font-bold font-mono text-yellow-300">400</div>
+                        <div class="text-xs mt-2 opacity-80">(Reach × Impact × Confidence) ÷ Effort</div>
+                    </div>
+                </div>
+
+                <button onclick="generateOutput()" class="wf-btn wf-btn-dark w-full py-4 text-xl mt-8">
+                    Generate Artifacts 🪄
+                </button>
+            </div>
+
+            <div id="step-6" class="step-container hidden-step wf-box bg-[#fffdf0]">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-3xl font-bold">Final Requirements</h2>
+                    <span id="final-type-badge" class="px-3 py-1 bg-black text-white rounded-full text-sm font-bold">Type</span>
+                </div>
+
+                <!-- Generated User Story -->
+                <div class="mb-6 relative">
+                    <div class="text-sm font-bold text-gray-500 uppercase mb-1">Synthesized User Story</div>
+                    <div id="output-story" class="p-4 bg-white border-2 border-black rounded shadow-[3px_3px_0px_#000] font-bold text-lg font-mono leading-relaxed">
+                        <!-- Filled by JS -->
+                    </div>
+                    <div class="recruiter-tooltip" style="top: -10px; right: -30px;">
+                        Translates the raw inputs into the standard 'As a... I want... So that...' format ready for the engineering backlog.
+                    </div>
+                </div>
+
+                <!-- Metadata Grid -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-3 border-2 border-black bg-white rounded">
+                        <div class="text-xs uppercase font-bold text-gray-500">RICE Score</div>
+                        <div id="output-rice" class="font-bold text-2xl text-purple-700">0</div>
+                    </div>
+                    <div class="p-3 border-2 border-black bg-white rounded">
+                        <div class="text-xs uppercase font-bold text-gray-500">Root Problem</div>
+                        <div id="output-root" class="font-bold text-md leading-tight">...</div>
+                    </div>
+                </div>
+
+                <!-- Automated Acceptance Criteria -->
+                <div class="mb-6">
+                    <div class="text-sm font-bold text-gray-500 uppercase mb-1">BDD Acceptance Criteria</div>
+                    <div id="output-ac" class="p-4 bg-white border-2 border-black rounded font-mono text-sm space-y-2">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Whys Log (Accordion style) -->
+                <div class="mb-8 border-t-2 border-dashed border-gray-400 pt-4">
+                    <div class="text-sm font-bold text-gray-500 uppercase mb-2">Root Cause Analysis Log</div>
+                    <div id="output-log" class="text-sm font-mono space-y-2 bg-gray-100 p-3 rounded border border-gray-300 overflow-y-auto max-h-40">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-4">
+                    <button onclick="copyJiraMarkdown()" class="wf-btn wf-btn-dark flex-1 py-3 text-lg">
+                        📋 Copy as Jira Markdown
+                    </button>
+                    <button onclick="resetApp()" class="wf-btn flex-1 py-3 text-lg">
+                        🔄 Start Over
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script>
+        // State Management
+        let appState = {
+            requestType: '',
+            originalPremise: '',
+            whys: [],
+            currentWhyIndex: 1,
+            persona: '',
+            bddGiven: '',
+            bddWhen: '',
+            bddThen: '',
+            riceReach: 500,
+            riceImpact: 2,
+            riceConfidence: 80,
+            riceEffort: 2,
+            riceScore: 400,
+            isRecruiterMode: false
+        };
+
+        const MAX_WHYS = 5;
+
+        // --- Navigation ---
+        function hideAllSteps() {
+            document.querySelectorAll('.step-container').forEach(el => el.classList.add('hidden-step'));
+        }
+
+        function goToStep(stepNumber) {
+            hideAllSteps();
+            document.getElementById(`step-${stepNumber}`).classList.remove('hidden-step');
+            window.scrollTo(0, 0);
+        }
+
+        // --- Step Handlers ---
+        function selectType(type) {
+            appState.requestType = type;
+            goToStep(2);
+            setTimeout(() => document.getElementById('input-premise').focus(), 100);
+        }
+
+        function startWhys() {
+            const premise = document.getElementById('input-premise').value.trim();
+            if (!premise) {
+                showToast("⚠️ Please describe the initial request.");
+                return;
+            }
+            
+            appState.originalPremise = premise;
+            appState.whys = [];
+            appState.currentWhyIndex = 1;
+            
+            renderWhyStep(appState.originalPremise);
+            goToStep(3);
+        }
+
+        function renderWhyStep(premiseText) {
+            document.getElementById('why-counter').innerText = appState.currentWhyIndex;
+            document.getElementById('why-premise-display').innerText = `"${premiseText}"`;
+            document.getElementById('input-why').value = '';
+            
+            if (appState.currentWhyIndex === MAX_WHYS) {
+                document.getElementById('btn-next-why').innerText = "Finish Analysis →";
+            } else {
+                document.getElementById('btn-next-why').innerText = "Next Question →";
+            }
+            
+            setTimeout(() => document.getElementById('input-why').focus(), 100);
+        }
+
+        function submitWhy() {
+            const answer = document.getElementById('input-why').value.trim();
+            if (!answer) {
+                showToast("⚠️ Please provide an answer to proceed.");
+                return;
+            }
+
+            appState.whys.push(answer);
+
+            if (appState.currentWhyIndex >= MAX_WHYS) {
+                finishWhys();
+            } else {
+                appState.currentWhyIndex++;
+                renderWhyStep(answer); // The answer becomes the new premise
+            }
+        }
+
+        function finishWhys() {
+            // If they clicked "Root Cause Found" early but have text in the box, save it.
+            const currentAnswer = document.getElementById('input-why').value.trim();
+            if (currentAnswer && appState.whys.length < appState.currentWhyIndex) {
+                appState.whys.push(currentAnswer);
+            }
+
+            if (appState.whys.length === 0) {
+                showToast("⚠️ Please answer at least one 'Why' before finishing.");
+                return;
+            }
+
+            goToStep(4);
+        }
+
+        // --- RICE Calculation ---
+        function updateRiceDisplay() {
+            const reach = parseFloat(document.getElementById('input-reach').value);
+            const impact = parseFloat(document.getElementById('input-impact').value);
+            const confidence = parseFloat(document.getElementById('input-confidence').value);
+            const effort = parseFloat(document.getElementById('input-effort').value);
+
+            document.getElementById('val-reach').innerText = reach;
+            document.getElementById('val-impact').innerText = impact;
+            document.getElementById('val-confidence').innerText = confidence + '%';
+            document.getElementById('val-effort').innerText = effort;
+
+            // RICE = (Reach * Impact * Confidence%) / Effort
+            const score = (reach * impact * (confidence / 100)) / effort;
+            
+            appState.riceReach = reach;
+            appState.riceImpact = impact;
+            appState.riceConfidence = confidence;
+            appState.riceEffort = effort;
+            appState.riceScore = score.toFixed(1);
+
+            document.getElementById('display-rice-score').innerText = appState.riceScore;
+        }
+
+        // --- Output Generation ---
+        function generateOutput() {
+            const persona = document.getElementById('input-persona').value.trim() || 'User';
+            appState.persona = persona;
+            appState.bddGiven = document.getElementById('input-given').value.trim() || 'the system is in a specific state';
+            appState.bddWhen = document.getElementById('input-when').value.trim() || 'the user takes an action';
+            appState.bddThen = document.getElementById('input-then').value.trim() || 'the expected outcome occurs';
+
+            // Synthesis Logic
+            const rootCause = appState.whys[appState.whys.length - 1]; // The very last answer
+            
+            // Format Story
+            const storyText = `As a <strong>${persona}</strong>,<br>I need to <strong>${rootCause.toLowerCase()}</strong>,<br>So that <strong>${appState.originalPremise.toLowerCase()}</strong>.`;
+            document.getElementById('output-story').innerHTML = storyText;
+
+            // Badges & Metrics
+            document.getElementById('final-type-badge').innerText = appState.requestType;
+            document.getElementById('output-rice').innerText = appState.riceScore;
+            document.getElementById('output-root').innerText = rootCause;
+
+            // BDD Acceptance Criteria
+            const acList = document.getElementById('output-ac');
+            acList.innerHTML = `
+                <div><span class="font-bold text-purple-700">GIVEN</span> ${appState.bddGiven}</div>
+                <div><span class="font-bold text-purple-700">WHEN</span> ${appState.bddWhen}</div>
+                <div><span class="font-bold text-purple-700">THEN</span> ${appState.bddThen}</div>
+            `;
+
+            // Log Whys
+            const logDiv = document.getElementById('output-log');
+            let logHTML = `<div><strong>Premise:</strong> ${appState.originalPremise}</div>`;
+            appState.whys.forEach((w, index) => {
+                logHTML += `<div class="ml-4 mt-1"><span class="text-gray-500">↳ Why ${index + 1}:</span> ${w}</div>`;
+            });
+            logDiv.innerHTML = logHTML;
+
+            goToStep(6);
+        }
+
+        // --- Markdown Export ---
+        function copyJiraMarkdown() {
+            const rootCause = appState.whys[appState.whys.length - 1];
+            
+            let markdown = `h2. User Story\n*As a* ${appState.persona},\n*I need to* ${rootCause.toLowerCase()},\n*So that* ${appState.originalPremise.toLowerCase()}.\n\n`;
+            
+            markdown += `h2. Metadata\n`;
+            markdown += `* *Type:* ${appState.requestType}\n`;
+            markdown += `* *RICE Score:* ${appState.riceScore}\n`;
+            markdown += `** Reach: ${appState.riceReach}\n`;
+            markdown += `** Impact: ${appState.riceImpact}\n`;
+            markdown += `** Confidence: ${appState.riceConfidence}%\n`;
+            markdown += `** Effort: ${appState.riceEffort}\n\n`;
+            
+            markdown += `h2. BDD Acceptance Criteria\n`;
+            markdown += `* *GIVEN* ${appState.bddGiven}\n`;
+            markdown += `* *WHEN* ${appState.bddWhen}\n`;
+            markdown += `* *THEN* ${appState.bddThen}\n\n`;
+            
+            markdown += `h2. 5-Whys Elicitation Log\n`;
+            markdown += `*Initial Request:* ${appState.originalPremise}\n`;
+            appState.whys.forEach((w, i) => {
+                markdown += `* *Why ${i + 1}:* ${w}\n`;
+            });
+
+            // Use newer clipboard API, fallback to execCommand if in iframe
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(markdown).then(() => {
+                    showToast("✅ Copied to clipboard! Ready to paste into Jira.");
+                });
+            } else {
+                let textArea = document.createElement("textarea");
+                textArea.value = markdown;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast("✅ Copied to clipboard! Ready to paste into Jira.");
+                } catch (err) {
+                    showToast("❌ Failed to copy. Please manually copy the text.");
+                }
+                textArea.remove();
+            }
+        }
+
+        function resetApp() {
+            appState = { 
+                requestType: '', originalPremise: '', whys: [], currentWhyIndex: 1, 
+                persona: '', bddGiven: '', bddWhen: '', bddThen: '',
+                riceReach: 500, riceImpact: 2, riceConfidence: 80, riceEffort: 2, riceScore: 400,
+                isRecruiterMode: appState.isRecruiterMode 
+            };
+            document.getElementById('input-premise').value = '';
+            document.getElementById('input-persona').value = '';
+            document.getElementById('input-given').value = '';
+            document.getElementById('input-when').value = '';
+            document.getElementById('input-then').value = '';
+            
+            // Reset Sliders
+            document.getElementById('input-reach').value = 500;
+            document.getElementById('input-impact').value = 2;
+            document.getElementById('input-confidence').value = 80;
+            document.getElementById('input-effort').value = 2;
+            updateRiceDisplay();
+
+            goToStep(1);
+        }
+
+        // --- Utils ---
+        function toggleRecruiterMode() {
+            appState.isRecruiterMode = !appState.isRecruiterMode;
+            if(appState.isRecruiterMode) {
+                document.body.classList.add('show-tooltips');
+                document.getElementById('recruiter-toggle-text').innerText = 'Recruiter Mode: ON';
+                showToast("🎓 Recruiter tooltips enabled.");
+            } else {
+                document.body.classList.remove('show-tooltips');
+                document.getElementById('recruiter-toggle-text').innerText = 'Recruiter Mode: OFF';
+            }
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast animate-[popIn_0.2s_ease-out_forwards]';
+            toast.innerText = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(20px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Init
+        goToStep(1);
+    </script>
+</body>
+</html>
